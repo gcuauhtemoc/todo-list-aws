@@ -57,7 +57,7 @@ En el output del despliegue se devolverá el API Gateway Endpoint URL
 
 A continuación se describen los comandos/acciones a realizar para poder probar la aplicación en local:
 ```bash
-## Crear red de docker
+## Crear red de docker -
 docker network create sam
 ## Levantar el contenedor de dynamodb en la red de sam con el nombre de dynamodb
 docker run -p 8000:8000 --network sam --name dynamodb -d amazon/dynamodb-local
