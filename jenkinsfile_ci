@@ -1,0 +1,66 @@
+ pipeline {
+    agent any
+
+    stages {
+        stage('GetCode') {
+            steps {
+                git branch: 'develop', url: 'https://github.com/gcuauhtemoc/todo-list-aws'
+            }
+        }
+
+        stage('StaticTest') {
+            steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh '''
+                        python3 -m flake8 --exit-zero --format=pylint src > flake8.out
+                    '''
+                    recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')],
+                                 qualityGates: [[threshold: 8, type: 'TOTAL', unstable: true], 
+                                                [threshold: 10, type: 'TOTAL', unstable: false]]
+
+                    sh '''
+                        python3 -m bandit --exit-zero -r src -f custom -o bandit.out --msg-template "{abspath}:{line}: {severity}: {test_id}: {msg}"
+                    '''
+                    recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')],
+                                 qualityGates: [[threshold: 2, type: 'TOTAL', unstable: true], 
+                                                [threshold: 4, type: 'TOTAL', unstable: false]]
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh 'sam build'
+                sh 'sam deploy --config-env staging --no-confirm-changeset --no-fail-on-empty-changeset'
+                script {
+                    def baseUrl = sh(script: "aws cloudformation describe-stacks --stack-name todo-list-aws --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --output text", returnStdout: true).trim()
+                    env.BASE_URL = baseUrl
+                }
+            }
+        }
+
+        stage('RestTest') {
+            steps {
+                sh '''
+                    python3 -m pytest --junitxml=result-test.xml test/integration/todoApiTest.py
+                '''
+                junit 'result-test.xml'
+            }
+        }
+
+        stage('Promote') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'GITHUB_TOKEN', variable: 'TOKEN')]) {
+                        sh '''
+                            git fetch origin
+                            git checkout master
+                            git merge origin/develop --no-edit
+                            git push https://$TOKEN@github.com/gcuauhtemoc/todo-list-aws.git master
+                        '''
+                    }
+                }
+            }
+        }
+    }
+}
