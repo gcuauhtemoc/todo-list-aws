@@ -65,5 +65,22 @@ pipeline {
                 junit 'result-test.xml'
             }
         }
+
+        stage('Promote') {
+            agent { label 'master' }
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'GITHUB_TOKEN', variable: 'TOKEN')]) {
+                        sh '''
+                            git fetch origin
+                            git checkout master
+                    	    git merge origin/develop --no-edit
+                            git pull --rebase origin master || git reset --hard origin/master
+                            git push https://$TOKEN@github.com/gcuauhtemoc/todo-list-aws.git master
+                        '''
+                    }
+                }
+            }
+        }
     }
 }
