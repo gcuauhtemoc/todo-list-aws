@@ -5,6 +5,8 @@ pipeline {
         stage('GetCode') {
             agent { label 'master' }
             steps {
+		sh "whoami"
+                sh "hostname"
                 git branch: 'master', url: 'https://github.com/gcuauhtemoc/todo-list-aws'
                 stash name: 'codigo', includes: '**'
             }
@@ -13,6 +15,8 @@ pipeline {
         stage('Deploy') {
             agent { label 'master' }
             steps {
+		sh "whoami"
+                sh "hostname"
                 unstash 'codigo'
                 sh 'sam build'
                 sh 'sam deploy --config-env production --no-confirm-changeset --no-fail-on-empty-changeset'
@@ -27,6 +31,8 @@ pipeline {
         stage('RestTest') {
             agent { label '02agente' }
             steps {
+		sh "whoami"
+                sh "hostname"
                 unstash 'deployed_code'
                 sh '''
                     python3 -m pytest -k "readonly" --junitxml=result-test.xml test/integration/todoApiTest.py
