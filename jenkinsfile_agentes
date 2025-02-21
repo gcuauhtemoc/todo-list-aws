@@ -9,6 +9,7 @@ pipeline {
                 sh "hostname"
                 git branch: 'develop', url: 'https://github.com/gcuauhtemoc/todo-list-aws'
                 stash name: 'codigo', includes: '**'
+		sh 'wget -O samconfig.toml https://raw.githubusercontent.com/gcuauhtemoc/todo-list-aws-config/staging/samconfig.toml'
             }
         }
 
