@@ -74,7 +74,7 @@ pipeline {
                     withCredentials([string(credentialsId: 'GITHUB_TOKEN', variable: 'TOKEN')]) {
                         sh '''
                             git fetch origin
-                            git checkout master
+                            git checkout master || git checkout -b master origin/master
                             git pull origin master
                             git config --global merge.ours.driver true
                             git merge -s ours origin/develop --no-edit
